@@ -439,7 +439,7 @@ class GRU(nn.Module):  # Implement a stacked GRU RNN
                 # Apply dropout on this layer, but not for the recurrent units
                 input_ = self.dropout(hidden[layer])
             # Store the output of the time step
-            input_tokens = torch.argmax(torch.softmax(self.out_layer(input_), dim=1), 1)
+            input_tokens = torch.argmax(self.out_layer(input_), dim=1)
             logits[timestep] = input_tokens
 
         return logits
@@ -534,8 +534,8 @@ class MultiHeadedAttention(nn.Module):
         # and nn.Dropout. You can also use softmax, masked_fill and the "clones"
         # function we provide.
 
-        # self.linears =
-        # self.dropout =
+        self.linears = clones(nn.Linear(n_units, n_units), 4)
+        self.dropout = nn.Dropout(p=dropout)
 
     def attention(self, query, key, value, mask=None, dropout=None):
         # Implement scaled dot product attention
@@ -557,17 +557,21 @@ class MultiHeadedAttention(nn.Module):
         # the normalized scores after dropout.
 
         # TODO ========================
-        # scores =
+        scores = torch.softmax(torch.dot(query, key))
+
         if mask is not None:
             if len(mask.size()) == 3 and len(query.size()) == 4:
                 mask.unsqueeze(1)
-            scores = scores.masked_fill()
-        # norm_scores =
-        # if dropout is not None:
-            # norm_scores =  # Tensor of shape batch_size x n_heads x seq_len x seq_len
-        # output =  # Tensor of shape batch_size x n_heads x seq_len x d_k
+            scores = scores.masked_fill(mask, -1e9)
 
-        # return output, norm_scores
+        norm_scores = scores / self.d_k
+
+        if dropout is not None:
+            norm_scores = self.dropout()  # Tensor of shape batch_size x n_heads x seq_len x seq_len
+
+        output = torch.dot(scores, value)  # Tensor of shape batch_size x n_heads x seq_len x d_k
+
+        return output, norm_scores
 
     def forward(self, query, key, value, mask=None):
         # Implement the masked multi-head attention.
@@ -586,8 +590,23 @@ class MultiHeadedAttention(nn.Module):
         # batch_size x n_heads x seq_len x d_k
 
         # 3) "Concat" using a view and apply a final linear.
+        batch_size = query.shape[0]
+        seq_len = query.shape[1]
 
-        return  # size: (batch_size, seq_len, self.n_units)
+        query = self.linears[0](query)
+        key = self.linears[1](key)
+        value = self.linears[2](value)
+
+        query = query.view(batch_size, self.n_heads, seq_len, self.d_k)
+        key = key.view(batch_size, self.n_heads, seq_len, self.d_k)
+        value = value.view(batch_size, self.n_heads, seq_len, self.d_k)
+
+        attention, norm_scores = self.attention(query, key, value, mask, self.dropout)
+        attention = attention.view(batch_size, seq_len, -1)
+
+        output_ = self.linears[3](attention)
+
+        return output_  # size: (batch_size, seq_len, self.n_units)
 
 
 # ---------------------------------------------------------------------------------
@@ -625,7 +644,7 @@ class PositionalEncoding(nn.Module):
         return self.dropout(x)
 
 
-#----------------------------------------------------------------------------------
+# ----------------------------------------------------------------------------------
 # The TransformerBlock and the full Transformer
 
 
