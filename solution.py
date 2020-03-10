@@ -564,13 +564,13 @@ class MultiHeadedAttention(nn.Module):
                 mask.unsqueeze(1)
             scores = scores.masked_fill(mask == 0, -1e9)
 
-        norm_scores = scores / self.d_k
+        norm_scores = scores / math.sqrt(self.d_k)
         norm_scores = torch.softmax(norm_scores, dim=-1)
 
         if dropout is not None:
             norm_scores = self.dropout(norm_scores)  # Tensor of shape batch_size x n_heads x seq_len x seq_len
 
-        output = torch.matmul(scores, value)  # Tensor of shape batch_size x n_heads x seq_len x d_k
+        output = torch.matmul(norm_scores, value)  # Tensor of shape batch_size x n_heads x seq_len x d_k
 
         return output, norm_scores
 
