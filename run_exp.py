@@ -92,7 +92,7 @@ parser = argparse.ArgumentParser(description='PyTorch Penn Treebank Language Mod
 parser.add_argument('--data', type=str, default='data',
                     help='location of the data corpus. We suggest you change the default\
                     here, rather than passing as an argument, to avoid long file paths.')
-parser.add_argument('--model', type=str, default='GRU',
+parser.add_argument('--model', type=str, default='TRANSFORMER',
                     help='type of recurrent net (RNN, GRU, TRANSFORMER)')
 parser.add_argument('--optimizer', type=str, default='SGD_LR_SCHEDULE',
                     help='optimization algo to use; SGD, SGD_LR_SCHEDULE, ADAM')
@@ -100,14 +100,14 @@ parser.add_argument('--seq_len', type=int, default=35,
                     help='number of timesteps over which BPTT is performed')
 parser.add_argument('--batch_size', type=int, default=20,
                     help='size of one minibatch')
-parser.add_argument('--initial_lr', type=float, default=20.0,
+parser.add_argument('--initial_lr', type=float, default=0.1,
                     help='initial learning rate')
-parser.add_argument('--hidden_size', type=int, default=200,
+parser.add_argument('--hidden_size', type=int, default=512,
                     help='size of hidden layers. IMPORTANT: for the transformer\
                     this must be a multiple of 16.')
 parser.add_argument('--save_best', action='store_true',
                     help='save the model for the best validation performance')
-parser.add_argument('--num_layers', type=int, default=2,
+parser.add_argument('--num_layers', type=int, default=1,
                     help='number of hidden layers in RNN/GRU, or number of transformer blocks in TRANSFORMER')
 
 # Other hyperparameters you may want to tune in your exploration

@@ -557,19 +557,20 @@ class MultiHeadedAttention(nn.Module):
         # the normalized scores after dropout.
 
         # TODO ========================
-        scores = torch.softmax(torch.dot(query, key))
+        scores = torch.matmul(query, torch.transpose(key, -2, -1))
 
         if mask is not None:
             if len(mask.size()) == 3 and len(query.size()) == 4:
                 mask.unsqueeze(1)
-            scores = scores.masked_fill(mask, -1e9)
+            scores = scores.masked_fill(mask == 0, -1e9)
 
         norm_scores = scores / self.d_k
+        norm_scores = torch.softmax(norm_scores, dim=-1)
 
         if dropout is not None:
-            norm_scores = self.dropout()  # Tensor of shape batch_size x n_heads x seq_len x seq_len
+            norm_scores = self.dropout(norm_scores)  # Tensor of shape batch_size x n_heads x seq_len x seq_len
 
-        output = torch.dot(scores, value)  # Tensor of shape batch_size x n_heads x seq_len x d_k
+        output = torch.matmul(scores, value)  # Tensor of shape batch_size x n_heads x seq_len x d_k
 
         return output, norm_scores
 
@@ -590,6 +591,7 @@ class MultiHeadedAttention(nn.Module):
         # batch_size x n_heads x seq_len x d_k
 
         # 3) "Concat" using a view and apply a final linear.
+
         batch_size = query.shape[0]
         seq_len = query.shape[1]
 
