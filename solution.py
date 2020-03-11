@@ -607,11 +607,8 @@ class MultiHeadedAttention(nn.Module):
         value = value.transpose(1,2)
 
         attention, norm_scores = self.attention(query, key, value, mask, self.dropout)
-        # attention = attention.view(batch_size, seq_len, self.n_heads, self.d_k)
         attention = attention.transpose(1,2)
         attention = attention.contiguous().view(batch_size, seq_len, -1)
-
-        # print(attention.shape)
 
         output_ = self.linears[3](attention)
 
