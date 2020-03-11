@@ -599,12 +599,19 @@ class MultiHeadedAttention(nn.Module):
         key = self.linears[1](key)
         value = self.linears[2](value)
 
-        query = query.view(batch_size, self.n_heads, seq_len, self.d_k)
-        key = key.view(batch_size, self.n_heads, seq_len, self.d_k)
-        value = value.view(batch_size, self.n_heads, seq_len, self.d_k)
+        query = query.view(batch_size, seq_len, self.n_heads, self.d_k)
+        query = query.transpose(1,2)
+        key = key.view(batch_size, seq_len, self.n_heads, self.d_k)
+        key = key.transpose(1,2)
+        value = value.view(batch_size, seq_len, self.n_heads, self.d_k)
+        value = value.transpose(1,2)
 
         attention, norm_scores = self.attention(query, key, value, mask, self.dropout)
-        attention = attention.view(batch_size, seq_len, -1)
+        # attention = attention.view(batch_size, seq_len, self.n_heads, self.d_k)
+        attention = attention.transpose(1,2)
+        attention = attention.contiguous().view(batch_size, seq_len, -1)
+
+        # print(attention.shape)
 
         output_ = self.linears[3](attention)
 
